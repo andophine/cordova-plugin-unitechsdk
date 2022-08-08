@@ -27,9 +27,9 @@ import java.util.concurrent.Executors;
  * This class echoes a string called from JavaScript.
  */
 public class UnitechSDK extends CordovaPlugin {
-    private CallbackContext scan2keyCallbackContext = null;
-    public static final String API_DATA = "unitech.scanservice.data";
-    private final String DATA_EXTRA = "text";
+    private CallbackContext scan2dataCallbackContext = null;
+    public static String API_DATA = "unitech.scanservice.data";//"android.intent.ACTION_DECODE_DATA";
+    private String DATA_EXTRA = "text";//"barcode_string";
     static final String RESULT = "Result";
     public static final String BUNDLE_ERROR_CODE = "errorCode";
     public static final String BUNDLE_ERROR_MSG = "errorMsg";
@@ -46,12 +46,7 @@ public class UnitechSDK extends CordovaPlugin {
     @Override
     public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
         Log.d("UnitechSDK", "execute "+action);
-        if (action.equals("coolMethod")) {
-            String message = args.getString(0);
-            this.coolMethod(message, callbackContext);
-            return true;
-        }
-        else if (action.equals("packageName")){
+        if (action.equals("packageName")){
             callbackContext.success(cordova.getActivity().getApplicationContext().getPackageName());
             return true;
         }
@@ -73,58 +68,52 @@ public class UnitechSDK extends CordovaPlugin {
             return true;
         }
         else if (action.equals("start")){
+            Log.d("scan2data","Start"+ args);
             if (this.receiver==null)
+                if (args.optString(0).length()>0){
+                    API_DATA = args.optString(0);
+                }
+            if (args.optString(1).length()>0){
+                DATA_EXTRA = args.optString(1);
+            }
             receiver = new BroadcastReceiver() {
                 @Override
                 public void onReceive(Context context, Intent mIntent) {
                     String action = mIntent.getAction();
                     Bundle bundle = mIntent.getExtras();
                     if  (bundle == null ) return;
-                    switch (action) {
-                        case API_DATA:
-                            if(mIntent.hasExtra(DATA_EXTRA)){
-                                String resultText = mIntent.getStringExtra(DATA_EXTRA);
-                                JSONObject obj = new JSONObject();
-                                try {
-                                    obj.put("action", action);
-                                    obj.put("bundle", bundle);
-                                } catch (JSONException e) {
-                                    LOG.e("SDK", e.getMessage(), e);
-                                }
-                                sendUpdate(obj,true);
+                    if (action.equals(API_DATA) && mIntent.hasExtra(DATA_EXTRA)){
+                        JSONObject jobj = new JSONObject();
+                        for (String item : bundle.keySet()){
+                            Object obj = bundle.get(item);
+                            try {
+                                jobj.put(item, obj);
+                            }catch (Exception e) {
                             }
-                            break;
+                        }
+                        sendUpdate(jobj,true);
                     }
                 }
             };
             IntentFilter filter = new IntentFilter();
             filter.addAction(API_DATA);
-            //filter.addAction(API_DATABYTE);
-            //filter.addAction(API_DATALENGTH);
             webView.getContext().registerReceiver(this.receiver, filter);
-            this.scan2keyCallbackContext = callbackContext;
+            this.scan2dataCallbackContext = callbackContext;
             return true;
         }
         else if (action.equals("stop")){
             webView.getContext().unregisterReceiver(this.receiver);
-            scan2keyCallbackContext = null;
+            scan2dataCallbackContext = null;
             return true;
         }
         return false;
     }
 
-    private void coolMethod(String message, CallbackContext callbackContext) {
-        if (message != null && message.length() > 0) {
-            callbackContext.success(message);
-        } else {
-            callbackContext.error("Expected one non-empty string argument.");
-        }
-    }
     private void sendUpdate(JSONObject info, boolean keepCallback) {
-        if (this.scan2keyCallbackContext != null) {
+        if (this.scan2dataCallbackContext != null) {
             PluginResult result = new PluginResult(PluginResult.Status.OK, info);
             result.setKeepCallback(keepCallback);
-            this.scan2keyCallbackContext.sendPluginResult(result);
+            this.scan2dataCallbackContext.sendPluginResult(result);
         }
     }
 
