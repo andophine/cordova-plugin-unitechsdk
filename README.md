@@ -11,16 +11,16 @@ Applications may use `window.addEventListener` to attach an event listener for a
 
     cordova plugin add https://github.com/andophine/cordova-plugin-unitechsdk.git
 
-## scan2keydata event
+## scan2data event
 
 Fires when the unitech scanner read data successfully.
 
 ### Example
 
-    window.addEventListener("scan2keydata", onScan2KeyData, false);
+    window.addEventListener("scan2keydata", onScan2Data, false);
 
-    function onScan2KeyData(data) {
-        console.log("scan2key: " + data);
+    function onScan2Data(data) {
+        console.log("scan2data: " + data);
     }
 
 ## serialNumber method
@@ -28,3 +28,9 @@ get unitech device serial number
 
 ### Example
     navigator.unitechsdk.serialNumber(function(echoValue){ console.log(echoValue);},null);
+    
+## configScan2Data
+Change scan action and extra key to listen.
+
+### Example
+    navigator.unitechsdk.configScan2Data("android.intent.ACTION_DECODE_DATA","barcode_string");
